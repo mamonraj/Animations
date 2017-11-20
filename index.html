@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+
+    <title>Rubiks Cube with random shuffle</title>
+
+    <style>
+     body {
+      margin: 0px;
+      background-color: lightyellow;
+      overflow: hidden;
+     }
+   </style>
+
+   <script src="three.min.js"></script>
+   <script src="OrbitControls.js"></script>
+   <script src="typeface.js"></script>
+   <script src="buttons.js"></script>
+   <script src="rubikscube.js"></script>
+
+   <script>
+       
+       //  This version of Orbit Controls does not have touch events.  //
+       //  This is an old version. //
+              
+var camera;
+var scene;
+var renderer;
+var mesh, geo, mat;
+var cube = [];
+var xcw = "xcw", xacw = "xacw", ycw = "ycw", yacw = "yacw", zcw = "zcw", zacw = "zacw";
+
+var rubikscube;
+var entry = 0;
+var k = 0;
+var mode = "start";
+var rownum = 0;
+var inrotation = 0;
+var attachsw = 0;
+var detachsw = 0;
+var shufflerotangle = 0;
+var shufflerotlayer = 0;
+
+var holdk = [];
+
+var WIDTH = 800;
+var HEIGHT = 500; 
+var thetext, text3d, text;
+
+var controls;
+
+function getready()
+{
+    init();
+    animate();
+}
+              
+function init()
+{
+    WIDTH = window.innerWidth;
+    HEIGHT = window.innerHeight;
+
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(30,WIDTH/HEIGHT,0.1,20000);
+
+    camera.position.set(-50,30,50);
+    scene.add(camera);
+       
+    var PointLight = new THREE.PointLight( 0xFFFFFF );
+    PointLight.position.set( 0, 0, 50 );
+    scene.add(PointLight);
+
+    var pointLight = new THREE.PointLight( 0xFFFFFF );
+    pointLight.position.set( 0, 0, -50 );
+    scene.add(pointLight);
+   
+    var pointLight = new THREE.PointLight( 0xFFFFFF );
+    pointLight.position.set( 0, 50, 0 );
+    scene.add(pointLight);
+
+    var pointLight = new THREE.PointLight( 0xFFFFFF );
+    pointLight.position.set( 0, -50, 0 );
+    scene.add(pointLight);
+
+    var pointLight = new THREE.PointLight( 0xFFFFFF );
+    pointLight.position.set( 50, 0, 0 );
+    scene.add(pointLight);
+
+    var pointLight = new THREE.PointLight( 0xFFFFFF );
+    pointLight.position.set( -50, 0, 0 );
+    scene.add(pointLight);
+       
+    createcube();
+    
+    renderer = new THREE.WebGLRenderer({antialias:true});
+      
+    renderer.setSize(WIDTH,HEIGHT);
+    document.body.appendChild( renderer.domElement );
+    
+    // create buttons for X, Y, Z axis  rotation //
+    
+    createbuttons();
+    
+    //  end of buttons.  //
+       
+    window.addEventListener( 'resize', onWindowResize, false );
+    
+    render();
+    
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+}
+      
+function animate()
+{  
+    if (entry < 3)
+       {
+           shuffle();
+           entry += 1;
+           render();
+           controls.update();
+           requestAnimationFrame( animate );
+           return;
+       }
+       
+    if (mode === "start")
+       {
+           render();
+           controls.update();
+           requestAnimationFrame( animate );
+           return;
+       }   
+        
+    if (detachsw == 1)
+       {
+           detachsw =  0;
+           mode = "start";
+                   
+           for (k = 0; k < 9; k++)
+               {
+                   THREE.SceneUtils.detach(cube[holdk[k]], rubikscube, scene);
+                   rubikscube.rotation.set(0,0,0); 
+               }
+               
+           resetcubes(); 
+           rubikscube.updateMatrixWorld(); 
+           attachsw = 0;
+           
+           k = 0; 
+           
+           while (k < holdk.length)
+           {
+               holdk.pop();
+           }
+       }
+    
+       if (mode === "xcw")
+          {
+               if (attachsw == 0)
+                  {
+                       attachsw = 1;
+                       
+                       if (rownum == 1)
+                          {
+                            for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.x - 5) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }
+                          
+                       if (rownum == 2)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.x) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }   
+                          
+                       if (rownum == 3)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.x + 5) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          } 
+                          
+                       rubikscube.updateMatrixWorld();    
+                  }
+                                   
+                  rubikscube.rotation.x -= 0.01;
+                  
+                  if (rubikscube.rotation.x < - 1.57)
+                     {
+                        detachsw = 1;      
+                     }
+                     
+                  rubikscube.updateMatrixWorld(); 
+          }
+          
+       if (mode === "xacw")
+          {
+                if (attachsw == 0)
+                  {
+                       attachsw = 1;
+                       
+                       if (rownum == 1)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.x - 5) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }
+                          
+                       if (rownum == 2)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.x) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }   
+                          
+                       if (rownum == 3)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.x + 5) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }   
+                  }
+                  
+                  rubikscube.rotation.x += 0.01;
+                  
+                  if (rubikscube.rotation.x > 1.57)
+                     {
+                         detachsw = 1;      
+                     }
+                     
+                  rubikscube.updateMatrixWorld(); 
+          } 
+          
+       if (mode === "ycw")
+          {
+               if (attachsw == 0)
+                  {
+                       attachsw = 1;
+                       
+                       if (rownum == 1)
+                          {
+                            for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.y - 5) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }
+                          
+                       if (rownum == 2)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.y) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }   
+                          
+                       if (rownum == 3)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.y + 5) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          } 
+                          
+                       rubikscube.updateMatrixWorld();    
+                  }
+                                   
+                  rubikscube.rotation.y -= 0.01;
+                  
+                  if (rubikscube.rotation.y < - 1.57)
+                     {
+                        detachsw = 1;      
+                     }
+                     
+                  rubikscube.updateMatrixWorld(); 
+          }
+          
+       if (mode === "yacw")
+          {
+               if (attachsw == 0)
+                  {
+                       attachsw = 1;
+                       
+                       if (rownum == 1)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.y - 5) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }
+                          
+                       if (rownum == 2)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.y) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }   
+                          
+                       if (rownum == 3)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.y + 5) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }   
+                  }
+                  
+                  rubikscube.rotation.y += 0.01;
+                  
+                  if (rubikscube.rotation.y > 1.57)
+                     {
+                         detachsw = 1;      
+                     }
+                     
+                  rubikscube.updateMatrixWorld(); 
+          }    
+          
+       if (mode === "zcw")
+          {
+               if (attachsw == 0)
+                  {
+                       attachsw = 1;
+                       
+                       if (rownum == 1)
+                          {
+                            for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.z - 5) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }
+                          
+                       if (rownum == 2)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.z) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }   
+                          
+                       if (rownum == 3)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.z + 5) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          } 
+                          
+                       rubikscube.updateMatrixWorld();    
+                  }
+                                   
+                  rubikscube.rotation.z -= 0.01;
+                  
+                  if (rubikscube.rotation.z < - 1.57)
+                     {
+                        detachsw = 1;      
+                     }
+                     
+                  rubikscube.updateMatrixWorld(); 
+          }
+          
+       if (mode === "zacw")
+          {
+               if (attachsw == 0)
+                  {
+                       attachsw = 1;
+                       
+                       if (rownum == 1)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.z - 5) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }
+                          
+                       if (rownum == 2)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.z) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }   
+                          
+                       if (rownum == 3)
+                          {
+                               for (k = 0; k < 27; k++)
+                                {
+                                   if(Math.abs(cube[k].position.z + 5) < 1)
+                                     {   
+                                         holdk.push(k);
+                                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                                     }  
+                                }
+                          }   
+                  }
+                  
+                  rubikscube.rotation.z += 0.01;
+                  
+                  if (rubikscube.rotation.z > 1.57)
+                     {
+                         detachsw = 1;      
+                     }
+                     
+                  rubikscube.updateMatrixWorld(); 
+          }    
+   
+    render();
+    controls.update();
+    requestAnimationFrame( animate );
+}
+
+function resetcubes()
+{
+    // after rotation the coordinates shift by delta, so it is necessary to round off  to whole numbers. //
+   
+    for (k = 0; k < 27; k++ )
+        {
+            if (Math.abs( cube[k].position.x - 5) < 1)
+               {
+                    cube[k].position.x = 5;      
+               }
+
+            if (Math.abs( cube[k].position.x + 5) < 1)
+               {
+                    cube[k].position.x = -5;      
+               } 
+
+            if (Math.abs( cube[k].position.x) < 1)
+               {
+                    cube[k].position.x = 0;      
+               }
+
+            if (Math.abs( cube[k].position.y - 5) < 1)
+               {
+                    cube[k].position.y = 5;      
+               }
+
+            if (Math.abs( cube[k].position.y + 5) < 1)
+               {
+                    cube[k].position.y = -5;      
+               } 
+
+            if (Math.abs( cube[k].position.y) < 1)
+               {
+                    cube[k].position.y = 0;      
+               }   
+
+            if (Math.abs( cube[k].position.z - 5) < 1)
+               {
+                    cube[k].position.z = 5;      
+               }
+
+            if (Math.abs( cube[k].position.z + 5) < 1)
+               {
+                    cube[k].position.z = -5;      
+               } 
+
+            if (Math.abs( cube[k].position.z) < 1)
+               {
+                    cube[k].position.z = 0;      
+               } 
+     }    
+          
+}
+
+function shuffle()
+{
+    var xbit = Math.random();
+    
+    if (xbit > 0.5)
+    {
+        shufflerotangle = 3.14;
+        shufflerotlayer = 5;
+    }
+    else
+    {
+        shufflerotangle = 1.57;
+        shufflerotlayer = -5;
+    }
+    
+    if (entry == 0) 
+        {
+            for (k = 0; k < 27; k++)
+                {
+                   if(Math.abs(cube[k].position.x + shufflerotlayer) < 1)
+                     {   
+                         holdk.push(k);
+                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                     }  
+                }
+
+            rubikscube.rotation.x = - shufflerotangle; 
+            rubikscube.updateMatrixWorld(); 
+
+            for (k = 0; k < 9; k++)
+                {
+                   THREE.SceneUtils.detach(cube[holdk[k]], rubikscube, scene);
+                }   
+
+            k = 0; 
+            while (k < holdk.length)
+            {
+                holdk.pop();
+            }    
+
+            rubikscube.rotation.set(0,0,0);
+            rubikscube.updateMatrixWorld(); 
+        }
+        
+     if (entry == 1) 
+        {
+            for (k = 0; k < 27; k++)
+                {
+                   if(Math.abs(cube[k].position.y + shufflerotlayer) < 1)
+                     {   
+                         holdk.push(k);
+                         THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                     }  
+                }
+
+            rubikscube.rotation.y = - shufflerotangle; 
+            rubikscube.updateMatrixWorld(); 
+
+            for (k = 0; k < 9; k++)
+                {
+                   THREE.SceneUtils.detach(cube[holdk[k]], rubikscube, scene);
+                }   
+
+            k = 0; 
+            while (k < holdk.length)
+            {
+                holdk.pop();
+            }    
+
+            rubikscube.rotation.set(0,0,0);
+            rubikscube.updateMatrixWorld(); 
+        }
+        
+    if (entry == 2) 
+        {
+            for (k = 0; k < 27; k++)
+                   {
+                      if(Math.abs(cube[k].position.z + shufflerotlayer) < 1)
+                        {   
+                            holdk.push(k);
+                            THREE.SceneUtils.attach(cube[k], scene, rubikscube);
+                        }  
+                   }
+
+            rubikscube.rotation.z = - shufflerotangle; 
+            rubikscube.updateMatrixWorld(); 
+
+            for (k = 0; k < 9; k++)
+                {
+                   THREE.SceneUtils.detach(cube[holdk[k]], rubikscube, scene);
+                }   
+
+            k = 0; 
+            while (k < holdk.length)
+            {
+                holdk.pop();
+            }    
+
+            rubikscube.rotation.set(0,0,0);
+            rubikscube.updateMatrixWorld(); 
+        }
+}
+
+function render()
+{
+    renderer.render( scene, camera );
+}
+
+function onWindowResize()
+{
+    camera.aspect = WIDTH / HEIGHT;
+    camera.updateProjectionMatrix();
+    renderer.setSize( WIDTH,HEIGHT );
+    render();
+}
+
+function turnit(parm1, parm2)
+{
+    mode = parm1;
+    rownum = parm2;
+}
+
+</script>
+
+</head>
+
+<body onload="getready();">
+   
+</body>
+
+</html>
+
+
+
